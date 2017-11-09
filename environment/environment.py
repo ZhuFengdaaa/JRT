@@ -10,7 +10,7 @@ class Environment(object):
   action_size = -1
   
   @staticmethod
-  def create_environment(env_type, env_name):
+  def create_environment(env_type, env_name, thread_index=0):
     if env_type == 'maze':
       from . import maze_environment
       return maze_environment.MazeEnvironment()
@@ -19,7 +19,7 @@ class Environment(object):
       return lab_environment.LabEnvironment(env_name)
     elif env_type == 'indoor':
       from . import indoor_environment
-      return indoor_environment.IndoorEnvironment(env_name)
+      return indoor_environment.IndoorEnvironment(env_name, thread_index)
     else:
       from . import gym_environment
       return gym_environment.GymEnvironment(env_name)

@@ -3,10 +3,14 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import copy
+from datetime import datetime
 import numpy as np
+import os
 
 from environment import environment
 from sim.simulator.RoomSimulator import RoomSimulator
+from helpers import sim_config
 
 class IndoorEnvironment(environment.Environment):
 
@@ -16,28 +20,42 @@ class IndoorEnvironment(environment.Environment):
     [0,0,1]
   ]
 
+  LOG_DIR = None
+
   @staticmethod
   def get_action_size(env_name):
     return len(IndoorEnvironment.ACTION_LIST)
-  
-  def __init__(self, env_name):
+
+  @staticmethod
+  def get_log_dir():
+    if IndoorEnvironment.LOG_DIR is None:
+      timestamp = datetime.now().strftime('%Y%m%d-%H%M%S-%f')
+      IndoorEnvironment.LOG_DIR =  './logs/' + timestamp
+    return IndoorEnvironment.LOG_DIR
+
+  def __init__(self, env_name, thread_index):
     environment.Environment.__init__(self)
     
     self.last_state = None
     self.last_action = 0
     self.last_reward = 0
 
-    self._sim = RoomSimulator(sim_args)
+    simargs = copy.copy(sim_config.simulator_args)
+    simargs['id'] = 'sim%02d' % thread_index
+    simargs['logdir'] = os.path.join(IndoorEnvironment.get_log_dir(), simargs['id'])
+
+    self._sim = RoomSimulator(simargs)
     self._sim_obs_space = self._sim.get_observation_space()
+    self.reset()
 
   def reset(self):
-    result = self._sim.init_game()
-    if result is None:
-        result = self._sim.new_episode()
-    # Force one observation
-    #self._step([0]*self._sim.num_buttons)
+    result = self._sim.reset()
     
-    #self.last_state = self._preprocess_frame(obs)
+    self._episode_info = result.get('episode_info')
+    self._last_full_state = result.get('observation')
+    obs = self._last_full_state['images']
+    state = self._preprocess_frame(obs)
+    self.last_state = state
     self.last_action = 0
     self.last_reward = 0
 
@@ -58,16 +76,16 @@ class IndoorEnvironment(environment.Environment):
     real_action = IndoorEnvironment.ACTION_LIST[action]
 
     full_state = self._sim.step(real_action)
-    self._last_full_state = state  # Last observed state
+    self._last_full_state = full_state  # Last observed state
     obs = full_state['images']
     reward = full_state['rewards']
     terminal = full_state['terminals']
-    
+
     if not terminal:
       state = self._preprocess_frame(obs)
     else:
       state = self.last_state
-    
+
     pixel_change = self._calc_pixel_change(state, self.last_state)
     self.last_state = state
     self.last_action = action
