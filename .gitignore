@@ -6,3 +6,4 @@ checkpoints*/*
 memo.txt
 old
 .DS_Store
+logs/
