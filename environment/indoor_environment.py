@@ -5,7 +5,8 @@ from __future__ import print_function
 
 import numpy as np
 
-from DFP.sim.simulator.RoomSimulator import RoomSimulator
+from environment import environment
+from sim.simulator.RoomSimulator import RoomSimulator
 
 class IndoorEnvironment(environment.Environment):
 
