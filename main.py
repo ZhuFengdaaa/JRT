@@ -22,6 +22,8 @@ USE_GPU = True # To use GPU, set True
 # get command line args
 flags = get_options("training")
 
+Environment.set_log_dir(flags.log_dir)
+
 def log_uniform(lo, hi, rate):
   log_lo = math.log(lo)
   log_hi = math.log(hi)
@@ -133,7 +135,7 @@ class Application(object):
     tf.summary.scalar("score", self.score_input)
     
     self.summary_op = tf.summary.merge_all()
-    self.summary_writer = tf.summary.FileWriter(flags.log_file,
+    self.summary_writer = tf.summary.FileWriter(flags.log_dir,
                                                 self.sess.graph)
     
     # init or load checkpoint with saver

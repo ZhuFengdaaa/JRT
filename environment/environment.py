@@ -8,7 +8,20 @@ import numpy as np
 class Environment(object):
   # cached action size
   action_size = -1
-  
+
+  LOG_DIR = None
+
+  @staticmethod
+  def get_log_dir():
+    if Environment.LOG_DIR is None:
+      timestamp = datetime.now().strftime('%Y%m%d-%H%M%S-%f')
+      Environment.LOG_DIR = './logs/' + timestamp
+    return Environment.LOG_DIR
+
+  @staticmethod
+  def set_log_dir(dir):
+    Environment.LOG_DIR = dir
+
   @staticmethod
   def create_environment(env_type, env_name, thread_index=0):
     if env_type == 'maze':
