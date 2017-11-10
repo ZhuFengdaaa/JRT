@@ -40,7 +40,7 @@ class IndoorEnvironment(environment.Environment):
     self.last_action = 0
     self.last_reward = 0
 
-    simargs = copy.copy(sim_config.simulator_args)
+    simargs = sim_config.get(env_name)
     simargs['id'] = 'sim%02d' % thread_index
     simargs['logdir'] = os.path.join(IndoorEnvironment.get_log_dir(), simargs['id'])
 
