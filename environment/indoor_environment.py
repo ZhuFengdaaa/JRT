@@ -20,18 +20,9 @@ class IndoorEnvironment(environment.Environment):
     [0,0,1]
   ]
 
-  LOG_DIR = None
-
   @staticmethod
   def get_action_size(env_name):
     return len(IndoorEnvironment.ACTION_LIST)
-
-  @staticmethod
-  def get_log_dir():
-    if IndoorEnvironment.LOG_DIR is None:
-      timestamp = datetime.now().strftime('%Y%m%d-%H%M%S-%f')
-      IndoorEnvironment.LOG_DIR =  './logs/' + timestamp
-    return IndoorEnvironment.LOG_DIR
 
   def __init__(self, env_name, thread_index):
     environment.Environment.__init__(self)
