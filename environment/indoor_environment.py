@@ -24,6 +24,10 @@ class IndoorEnvironment(environment.Environment):
   def get_action_size(env_name):
     return len(IndoorEnvironment.ACTION_LIST)
 
+  @staticmethod
+  def get_objective_size(env_name):
+    return 9  # TODO update based on config
+
   def __init__(self, env_name, thread_index):
     environment.Environment.__init__(self)
     
@@ -45,7 +49,7 @@ class IndoorEnvironment(environment.Environment):
     self._episode_info = result.get('episode_info')
     self._last_full_state = result.get('observation')
     obs = self._last_full_state['images']
-    state = self._preprocess_frame(obs)
+    state = { 'image': self._preprocess_frame(obs) }
     self.last_state = state
     self.last_action = 0
     self.last_reward = 0
@@ -73,11 +77,11 @@ class IndoorEnvironment(environment.Environment):
     terminal = full_state['terminals']
 
     if not terminal:
-      state = self._preprocess_frame(obs)
+      state = { 'image': self._preprocess_frame(obs) }
     else:
       state = self.last_state
 
-    pixel_change = self._calc_pixel_change(state, self.last_state)
+    pixel_change = self._calc_pixel_change(state['image'], self.last_state['image'])
     self.last_state = state
     self.last_action = action
     self.last_reward = reward

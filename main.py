@@ -81,8 +81,10 @@ class Application(object):
     
     action_size = Environment.get_action_size(flags.env_type,
                                               flags.env_name)
-    
+    objective_size = Environment.get_objective_size(flags.env_type, flags.env_name)
+
     self.global_network = UnrealModel(action_size,
+                                      objective_size,
                                       -1,
                                       flags.use_pixel_change,
                                       flags.use_value_replay,

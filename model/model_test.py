@@ -65,6 +65,7 @@ class TestUnrealModel(tf.test.TestCase):
     """ Check variable size of the model """
     
     model = UnrealModel(1,
+                        0,
                         -1,
                         use_pixel_change,
                         use_value_replay,

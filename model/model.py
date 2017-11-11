@@ -29,6 +29,7 @@ class UnrealModel(object):
   """
   def __init__(self,
                action_size,
+               objective_size,
                thread_index, # -1 for global
                use_pixel_change,
                use_value_replay,
@@ -45,6 +46,8 @@ class UnrealModel(object):
     self._use_reward_prediction = use_reward_prediction
     self._pixel_change_lambda = pixel_change_lambda
     self._entropy_beta = entropy_beta
+    self._image_shape = [84,84]
+    self._objective_shape = [9,1]
     
     self._create_network(for_display)
     
@@ -78,7 +81,7 @@ class UnrealModel(object):
 
   def _create_base_network(self):
     # State (Base image input)
-    self.base_input = tf.placeholder("float", [None, 84, 84, 3])
+    self.base_input = tf.placeholder("float", [None, self._image_shape[0], self._image_shape[1], 3])
 
     # Last action and reward
     self.base_last_action_reward_input = tf.placeholder("float", [None, self._action_size+1])
@@ -114,7 +117,7 @@ class UnrealModel(object):
       return h_conv2
   
   
-  def _base_lstm_layer(self, conv_output, last_action_reward_input, initial_state_input,
+  def _base_lstm_layer(self, conv_output, last_action_reward_objective_input, initial_state_input,
                        reuse=False):
     with tf.variable_scope("base_lstm", reuse=reuse) as scope:
       # Weights
@@ -128,7 +131,7 @@ class UnrealModel(object):
 
       step_size = tf.shape(conv_output_fc)[:1]
 
-      lstm_input = tf.concat([conv_output_fc, last_action_reward_input], 1)
+      lstm_input = tf.concat([conv_output_fc, last_action_reward_objective_input], 1)
       # (unroll_step, 256+action_size+1)
 
       lstm_input_reshaped = tf.reshape(lstm_input, [1, -1, 256+self._action_size+1])
@@ -168,7 +171,7 @@ class UnrealModel(object):
 
   def _create_pc_network(self):
     # State (Image input) 
-    self.pc_input = tf.placeholder("float", [None, 84, 84, 3])
+    self.pc_input = tf.placeholder("float", [None, self._image_shape[0], self._image_shape[1], 3])
 
     # Last action and reward
     self.pc_last_action_reward_input = tf.placeholder("float", [None, self._action_size+1])
@@ -228,7 +231,7 @@ class UnrealModel(object):
 
   def _create_vr_network(self):
     # State (Image input)
-    self.vr_input = tf.placeholder("float", [None, 84, 84, 3])
+    self.vr_input = tf.placeholder("float", [None, self._image_shape[0], self._image_shape[1], 3])
 
     # Last action and reward
     self.vr_last_action_reward_input = tf.placeholder("float", [None, self._action_size+1])
@@ -249,7 +252,7 @@ class UnrealModel(object):
 
     
   def _create_rp_network(self):
-    self.rp_input = tf.placeholder("float", [3, 84, 84, 3])
+    self.rp_input = tf.placeholder("float", [3, self._image_shape[0], self._image_shape[1], 3])
 
     # RP conv layers
     rp_conv_output = self._base_conv_layers(self.rp_input, reuse=True)
@@ -356,7 +359,7 @@ class UnrealModel(object):
     # This run_base_policy_and_value() is used when forward propagating.
     # so the step size is 1.
     pi_out, v_out, self.base_lstm_state_out = sess.run( [self.base_pi, self.base_v, self.base_lstm_state],
-                                                        feed_dict = {self.base_input : [s_t],
+                                                        feed_dict = {self.base_input : [s_t['image']],
                                                                      self.base_last_action_reward_input : [last_action_reward],
                                                                      self.base_initial_lstm_state0 : self.base_lstm_state_out[0],
                                                                      self.base_initial_lstm_state1 : self.base_lstm_state_out[1]} )
@@ -368,7 +371,7 @@ class UnrealModel(object):
     # For display tool.
     pi_out, v_out, self.base_lstm_state_out, q_disp_out, q_max_disp_out = \
         sess.run( [self.base_pi, self.base_v, self.base_lstm_state, self.pc_q_disp, self.pc_q_max_disp],
-                  feed_dict = {self.base_input : [s_t],
+                  feed_dict = {self.base_input : [s_t['image']],
                                self.base_last_action_reward_input : [last_action_reward],
                                self.base_initial_lstm_state0 : self.base_lstm_state_out[0],
                                self.base_initial_lstm_state1 : self.base_lstm_state_out[1]} )
@@ -383,7 +386,7 @@ class UnrealModel(object):
     # When next sequence starts, V will be calculated again with the same state using updated network weights,
     # so we don't update LSTM state here.
     v_out, _ = sess.run( [self.base_v, self.base_lstm_state],
-                         feed_dict = {self.base_input : [s_t],
+                         feed_dict = {self.base_input : [s_t['image']],
                                       self.base_last_action_reward_input : [last_action_reward],
                                       self.base_initial_lstm_state0 : self.base_lstm_state_out[0],
                                       self.base_initial_lstm_state1 : self.base_lstm_state_out[1]} )
@@ -392,14 +395,14 @@ class UnrealModel(object):
   
   def run_pc_q_max(self, sess, s_t, last_action_reward):
     q_max_out = sess.run( self.pc_q_max,
-                          feed_dict = {self.pc_input : [s_t],
+                          feed_dict = {self.pc_input : [s_t['image']],
                                        self.pc_last_action_reward_input : [last_action_reward]} )
     return q_max_out[0]
 
   
   def run_vr_value(self, sess, s_t, last_action_reward):
     vr_v_out = sess.run( self.vr_v,
-                         feed_dict = {self.vr_input : [s_t],
+                         feed_dict = {self.vr_input : [s_t['image']],
                                       self.vr_last_action_reward_input : [last_action_reward]} )
     return vr_v_out[0]
 
@@ -407,7 +410,7 @@ class UnrealModel(object):
   def run_rp_c(self, sess, s_t):
     # For display tool
     rp_c_out = sess.run( self.rp_c,
-                         feed_dict = {self.rp_input : s_t} )
+                         feed_dict = {self.rp_input : s_t['image']} )
     return rp_c_out[0]
 
   

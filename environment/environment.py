@@ -62,6 +62,12 @@ class Environment(object):
         gym_environment.GymEnvironment.get_action_size(env_name)
     return Environment.action_size
 
+  @staticmethod
+  def get_objective_size(env_type, env_name):
+    if env_type == "indoor":
+      from . import indoor_environment
+      return indoor_environment.IndoorEnvironment.get_objective_size(env_name)
+    return 0
   def __init__(self):
     pass
 

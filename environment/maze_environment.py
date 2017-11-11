@@ -50,7 +50,7 @@ class MazeEnvironment(environment.Environment):
   def reset(self):
     self.x = self._start_pos[0]
     self.y = self._start_pos[1]
-    self.last_state = self._get_current_image()
+    self.last_state = { 'image': self._get_current_image() }
     self.last_action = 0
     self.last_reward = 0    
     
@@ -121,8 +121,8 @@ class MazeEnvironment(environment.Environment):
     else:
       reward = 0
 
-    pixel_change = self._calc_pixel_change(image, self.last_state)
-    self.last_state = image
+    pixel_change = self._calc_pixel_change(image, self.last_state['image'])
+    self.last_state = {'image': image}
     self.last_action = action
     self.last_reward = reward
     return image, reward, terminal, pixel_change

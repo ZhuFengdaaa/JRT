@@ -85,7 +85,7 @@ class LabEnvironment(environment.Environment):
     self.conn.send([COMMAND_RESET, 0])
     obs = self.conn.recv()
     
-    self.last_state = self._preprocess_frame(obs)
+    self.last_state = { 'image': self._preprocess_frame(obs) }
     self.last_action = 0
     self.last_reward = 0
 
@@ -108,11 +108,11 @@ class LabEnvironment(environment.Environment):
     obs, reward, terminal = self.conn.recv()
 
     if not terminal:
-      state = self._preprocess_frame(obs)
+      state = { 'image': self._preprocess_frame(obs) }
     else:
       state = self.last_state
     
-    pixel_change = self._calc_pixel_change(state, self.last_state)
+    pixel_change = self._calc_pixel_change(state['image'], self.last_state['image'])
     self.last_state = state
     self.last_action = action
     self.last_reward = reward

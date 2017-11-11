@@ -71,7 +71,8 @@ class GymEnvironment(environment.Environment):
 
   def reset(self):
     self.conn.send([COMMAND_RESET, 0])
-    self.last_state = self.conn.recv()
+    image = self.conn.recv()
+    self.last_state = { 'image': image }
     
     self.last_action = 0
     self.last_reward = 0
@@ -85,9 +86,10 @@ class GymEnvironment(environment.Environment):
 
   def process(self, action):
     self.conn.send([COMMAND_ACTION, action])
-    state, reward, terminal = self.conn.recv()
+    image, reward, terminal = self.conn.recv()
+    state = { 'image': image }
     
-    pixel_change = self._calc_pixel_change(state, self.last_state)
+    pixel_change = self._calc_pixel_change(state['image'], self.last_state['image'])
     self.last_state = state
     self.last_action = action
     self.last_reward = reward

@@ -48,8 +48,10 @@ class Trainer(object):
     self.experience_history_size = experience_history_size
     self.max_global_time_step = max_global_time_step
     self.action_size = Environment.get_action_size(env_type, env_name)
+    self.objective_size = Environment.get_objective_size(env_type, env_name)
     
     self.local_network = UnrealModel(self.action_size,
+                                     self.objective_size,
                                      thread_index,
                                      use_pixel_change,
                                      use_value_replay,
@@ -225,7 +227,7 @@ class Trainer(object):
       a = np.zeros([self.action_size])
       a[ai] = 1.0
 
-      batch_si.append(si)
+      batch_si.append(si['image'])
       batch_a.append(a)
       batch_adv.append(adv)
       batch_R.append(R)
@@ -263,7 +265,7 @@ class Trainer(object):
       a[frame.action] = 1.0
       last_action_reward = frame.get_last_action_reward(self.action_size)
       
-      batch_pc_si.append(frame.state)
+      batch_pc_si.append(frame.state['image'])
       batch_pc_a.append(a)
       batch_pc_R.append(pc_R)
       batch_pc_last_action_reward.append(last_action_reward)
@@ -296,7 +298,7 @@ class Trainer(object):
     # t_max times loop
     for frame in vr_experience_frames[1:]:
       vr_R = frame.reward + self.gamma * vr_R
-      batch_vr_si.append(frame.state)
+      batch_vr_si.append(frame.state['image'])
       batch_vr_R.append(vr_R)
       last_action_reward = frame.get_last_action_reward(self.action_size)
       batch_vr_last_action_reward.append(last_action_reward)
@@ -317,7 +319,7 @@ class Trainer(object):
     batch_rp_c = []
     
     for i in range(3):
-      batch_rp_si.append(rp_experience_frames[i].state)
+      batch_rp_si.append(rp_experience_frames[i].state['image'])
 
     # one hot vector for target reward
     r = rp_experience_frames[3].reward

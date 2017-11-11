@@ -88,7 +88,9 @@ class Display(object):
     pygame.display.set_caption('UNREAL')
 
     self.action_size = Environment.get_action_size(flags.env_type, flags.env_name)
+    self.objective_size = Environment.get_objective_size(flags.env_type, flags.env_name)
     self.global_network = UnrealModel(self.action_size,
+                                      self.objective_size,
                                       -1,
                                       flags.use_pixel_change,
                                       flags.use_value_replay,
@@ -258,7 +260,7 @@ class Display(object):
       self.environment.reset()
       self.episode_reward = 0
       
-    self.show_image(state)
+    self.show_image(state['image'])
     self.show_policy(pi_values)
     self.show_value()
     self.show_reward()
