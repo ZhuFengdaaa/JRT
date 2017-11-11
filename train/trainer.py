@@ -113,7 +113,7 @@ class Trainer(object):
     last_reward = self.environment.last_reward
     last_action_reward = ExperienceFrame.concat_action_and_reward(last_action,
                                                                   self.action_size,
-                                                                  last_reward)
+                                                                  last_reward, prev_state)
     
     pi_, _ = self.local_network.run_base_policy_and_value(sess,
                                                           self.environment.last_state,
@@ -161,7 +161,7 @@ class Trainer(object):
       last_reward = self.environment.last_reward
       last_action_reward = ExperienceFrame.concat_action_and_reward(last_action,
                                                                     self.action_size,
-                                                                    last_reward)
+                                                                    last_reward, self.environment.last_state)
       
       pi_, value_ = self.local_network.run_base_policy_and_value(sess,
                                                                  self.environment.last_state,

@@ -3,8 +3,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import copy
-from datetime import datetime
 import numpy as np
 import os
 
@@ -26,7 +24,8 @@ class IndoorEnvironment(environment.Environment):
 
   @staticmethod
   def get_objective_size(env_name):
-    return 9  # TODO update based on config
+    simargs = sim_config.get(env_name)
+    return simargs.get('objective_size', 0)
 
   def __init__(self, env_name, thread_index):
     environment.Environment.__init__(self)
@@ -49,7 +48,8 @@ class IndoorEnvironment(environment.Environment):
     self._episode_info = result.get('episode_info')
     self._last_full_state = result.get('observation')
     obs = self._last_full_state['images']
-    state = { 'image': self._preprocess_frame(obs) }
+    objective = self._last_full_state.get('measurements')
+    state = { 'image': self._preprocess_frame(obs), 'objective': objective }
     self.last_state = state
     self.last_action = 0
     self.last_reward = 0
@@ -75,9 +75,10 @@ class IndoorEnvironment(environment.Environment):
     obs = full_state['images']
     reward = full_state['rewards']
     terminal = full_state['terminals']
+    objective = full_state.get('measurements')
 
     if not terminal:
-      state = { 'image': self._preprocess_frame(obs) }
+      state = { 'image': self._preprocess_frame(obs), 'objective': objective }
     else:
       state = self.last_state
 

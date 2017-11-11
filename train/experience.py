@@ -22,25 +22,28 @@ class ExperienceFrame(object):
     Return one hot vectored last action + last reward.
     """
     return ExperienceFrame.concat_action_and_reward(self.last_action, action_size,
-                                                    self.last_reward)
+                                                    self.last_reward, self.state)
 
   def get_action_reward(self, action_size):
     """
     Return one hot vectored action + reward.
     """
     return ExperienceFrame.concat_action_and_reward(self.action, action_size,
-                                                    self.reward)
+                                                    self.reward, self.state)
 
   @staticmethod
-  def concat_action_and_reward(action, action_size, reward):
+  def concat_action_and_reward(action, action_size, reward, state):
     """
     Return one hot vectored action and reward.
     """
     action_reward = np.zeros([action_size+1])
     action_reward[action] = 1.0
     action_reward[-1] = float(reward)
-    return action_reward
-  
+    objective = state.get('objective')
+    if objective is not None:
+      return np.concatenate((action_reward, objective))
+    else:
+      return action_reward
 
 class Experience(object):
   def __init__(self, history_size):

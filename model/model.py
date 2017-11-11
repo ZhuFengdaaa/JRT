@@ -40,6 +40,7 @@ class UnrealModel(object):
                for_display=False):
     self._device = device
     self._action_size = action_size
+    self._objective_size = objective_size
     self._thread_index = thread_index
     self._use_pixel_change = use_pixel_change
     self._use_value_replay = use_value_replay
@@ -47,8 +48,7 @@ class UnrealModel(object):
     self._pixel_change_lambda = pixel_change_lambda
     self._entropy_beta = entropy_beta
     self._image_shape = [84,84]
-    self._objective_shape = [9,1]
-    
+
     self._create_network(for_display)
     
   def _create_network(self, for_display):
@@ -83,9 +83,9 @@ class UnrealModel(object):
     # State (Base image input)
     self.base_input = tf.placeholder("float", [None, self._image_shape[0], self._image_shape[1], 3])
 
-    # Last action and reward
-    self.base_last_action_reward_input = tf.placeholder("float", [None, self._action_size+1])
-    
+    # Last action and reward and objective
+    self.base_last_action_reward_input = tf.placeholder("float", [None, self._action_size+1+self._objective_size])
+
     # Conv layers
     base_conv_output = self._base_conv_layers(self.base_input)
     
@@ -132,10 +132,11 @@ class UnrealModel(object):
       step_size = tf.shape(conv_output_fc)[:1]
 
       lstm_input = tf.concat([conv_output_fc, last_action_reward_objective_input], 1)
-      # (unroll_step, 256+action_size+1)
 
-      lstm_input_reshaped = tf.reshape(lstm_input, [1, -1, 256+self._action_size+1])
-      # (1, unroll_step, 256+action_size+1)
+      # (unroll_step, 256+action_size+1+objective_size)
+
+      lstm_input_reshaped = tf.reshape(lstm_input, [1, -1, 256+self._action_size+1+self._objective_size])
+      # (1, unroll_step, 256+action_size+1+objective_size)
 
       lstm_outputs, lstm_state = tf.nn.dynamic_rnn(self.lstm_cell,
                                                    lstm_input_reshaped,
@@ -173,8 +174,8 @@ class UnrealModel(object):
     # State (Image input) 
     self.pc_input = tf.placeholder("float", [None, self._image_shape[0], self._image_shape[1], 3])
 
-    # Last action and reward
-    self.pc_last_action_reward_input = tf.placeholder("float", [None, self._action_size+1])
+    # Last action and reward and objective
+    self.pc_last_action_reward_input = tf.placeholder("float", [None, self._action_size+1+self._objective_size])
 
     # pc conv layers
     pc_conv_output = self._base_conv_layers(self.pc_input, reuse=True)
@@ -233,8 +234,8 @@ class UnrealModel(object):
     # State (Image input)
     self.vr_input = tf.placeholder("float", [None, self._image_shape[0], self._image_shape[1], 3])
 
-    # Last action and reward
-    self.vr_last_action_reward_input = tf.placeholder("float", [None, self._action_size+1])
+    # Last action and reward and objective
+    self.vr_last_action_reward_input = tf.placeholder("float", [None, self._action_size+1+self._objective_size])
 
     # VR conv layers
     vr_conv_output = self._base_conv_layers(self.vr_input, reuse=True)
