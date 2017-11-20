@@ -141,7 +141,7 @@ class Application(object):
                                                 self.sess.graph)
     
     # init or load checkpoint with saver
-    self.saver = tf.train.Saver(self.global_network.get_vars())
+    self.saver = tf.train.Saver(self.global_network.get_vars(), max_to_keep=0)
     
     checkpoint = tf.train.get_checkpoint_state(flags.checkpoint_dir)
     if checkpoint and checkpoint.model_checkpoint_path:
