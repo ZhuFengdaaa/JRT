@@ -181,7 +181,7 @@ class Application(object):
 
   def save(self):
     """ Save checkpoint. 
-    Called from therad-0.
+    Called from thread-0.
     """
     self.stop_requested = True
   
