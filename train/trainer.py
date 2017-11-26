@@ -23,6 +23,7 @@ class Trainer(object):
                grad_applier,
                env_type,
                env_name,
+               use_lstm,
                use_pixel_change,
                use_value_replay,
                use_reward_prediction,
@@ -39,6 +40,7 @@ class Trainer(object):
     self.learning_rate_input = learning_rate_input
     self.env_type = env_type
     self.env_name = env_name
+    self.use_lstm = use_lstm
     self.use_pixel_change = use_pixel_change
     self.use_value_replay = use_value_replay
     self.use_reward_prediction = use_reward_prediction
@@ -53,6 +55,7 @@ class Trainer(object):
     self.local_network = UnrealModel(self.action_size,
                                      self.objective_size,
                                      thread_index,
+                                     use_lstm,
                                      use_pixel_change,
                                      use_value_replay,
                                      use_reward_prediction,
@@ -140,6 +143,7 @@ class Trainer(object):
       steps_per_sec = global_t / elapsed_time
       print("### Performance : {} STEPS in {:.0f} sec. {:.0f} STEPS/sec. {:.2f}M STEPS/hour".format(
         global_t,  elapsed_time, steps_per_sec, steps_per_sec * 3600 / 1000000.))
+      # print("### Experience : {}".format(self.experience.get_debug_string()))
     
 
   def _process_base(self, sess, global_t, summary_writer, summary_op, score_input):
@@ -152,7 +156,9 @@ class Trainer(object):
 
     terminal_end = False
 
-    start_lstm_state = self.local_network.base_lstm_state_out
+    start_lstm_state = None
+    if self.use_lstm:
+      start_lstm_state = self.local_network.base_lstm_state_out
 
     # t_max times loop
     for _ in range(self.local_t_max):
@@ -360,10 +366,12 @@ class Trainer(object):
       self.local_network.base_a: batch_a,
       self.local_network.base_adv: batch_adv,
       self.local_network.base_r: batch_R,
-      self.local_network.base_initial_lstm_state: start_lstm_state,
       # [common]
       self.learning_rate_input: cur_learning_rate
     }
+
+    if self.use_lstm:
+      feed_dict[self.local_network.base_initial_lstm_state] = start_lstm_state
 
     # [Pixel change]
     if self.use_pixel_change:

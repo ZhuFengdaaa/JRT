@@ -14,6 +14,7 @@ def get_options(option_type):
   # Common
   tf.app.flags.DEFINE_string("env_type", "lab", "environment type (lab or gym or maze or indoor)")
   tf.app.flags.DEFINE_string("env_name", "nav_maze_static_01",  "environment name")
+  tf.app.flags.DEFINE_boolean("use_lstm", True, "whether to use lstm")
   tf.app.flags.DEFINE_boolean("use_pixel_change", True, "whether to use pixel change")
   tf.app.flags.DEFINE_boolean("use_value_replay", True, "whether to use value function replay")
   tf.app.flags.DEFINE_boolean("use_reward_prediction", True, "whether to use reward prediction")

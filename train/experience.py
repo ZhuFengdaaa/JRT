@@ -55,6 +55,9 @@ class Experience(object):
     self._non_zero_reward_indices = deque()
     self._top_frame_index = 0
 
+  def get_debug_string(self):
+    return "{} frames, {} zero rewards, {} non zero rewards".format(
+      len(self._frames), len(self._zero_reward_indices), len(self._non_zero_reward_indices))
 
   def add_frame(self, frame):
     if frame.terminal and len(self._frames) > 0 and self._frames[-1].terminal:

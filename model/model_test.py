@@ -63,10 +63,12 @@ class TestUnrealModel(tf.test.TestCase):
                            use_reward_prediction,
                            var_size):
     """ Check variable size of the model """
-    
+    use_lstm = True
+
     model = UnrealModel(1,
                         0,
                         -1,
+                        use_lstm,
                         use_pixel_change,
                         use_value_replay,
                         use_reward_prediction,

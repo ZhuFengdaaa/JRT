@@ -19,6 +19,7 @@ def main(args):
   action_size = Environment.get_action_size(flags.env_type, flags.env_name)
   objective_size = Environment.get_objective_size(flags.env_type, flags.env_name)
   global_network = UnrealModel(action_size, objective_size, -1,
+                               flags.use_lstm,
                                flags.use_pixel_change,
                                flags.use_value_replay,
                                flags.use_reward_prediction,

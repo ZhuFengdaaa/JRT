@@ -92,6 +92,7 @@ class Display(object):
     self.global_network = UnrealModel(self.action_size,
                                       self.objective_size,
                                       -1,
+                                      flags.use_lstm,
                                       flags.use_pixel_change,
                                       flags.use_value_replay,
                                       flags.use_reward_prediction,
