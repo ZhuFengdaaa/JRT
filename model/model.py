@@ -461,10 +461,11 @@ class UnrealModel(object):
     return vr_v_out[0]
 
   
-  def run_rp_c(self, sess, s_t):
+  def run_rp_c(self, sess, state_history):
     # For display tool
+    frames = [s_t['image'] for s_t in state_history]
     rp_c_out = sess.run( self.rp_c,
-                         feed_dict = {self.rp_input : s_t['image']} )
+                         feed_dict = {self.rp_input : frames} )
     return rp_c_out[0]
 
   

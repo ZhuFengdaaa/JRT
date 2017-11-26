@@ -78,7 +78,11 @@ class Environment(object):
     pass
 
   def stop(self):
-    pass  
+    pass
+
+  # Set data split to use
+  def set_split(self):
+    pass
 
   def _subsample(self, a, average_width):
     s = a.shape

@@ -87,3 +87,7 @@ class IndoorEnvironment(environment.Environment):
     self.last_action = action
     self.last_reward = reward
     return state, reward, terminal, pixel_change
+
+  def set_split(self, split):
+    self._sim.set_episode_schedule(split, end_current_episode=True)
+
