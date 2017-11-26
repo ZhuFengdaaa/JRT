@@ -46,6 +46,6 @@ def get_options(option_type):
     tf.app.flags.DEFINE_string("frame_save_dir", "/tmp/unreal_frames", "frame save directory")
     tf.app.flags.DEFINE_boolean("recording", False, "whether to record movie")
     tf.app.flags.DEFINE_boolean("frame_saving", False, "whether to save frames")
-    tf.app.flags.DEFINE_boolean("split", "val", "What data split to use")
+    tf.app.flags.DEFINE_string("split", "val", "What data split to use")
 
   return tf.app.flags.FLAGS

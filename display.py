@@ -101,6 +101,7 @@ class Display(object):
                                       "/cpu:0",
                                       for_display=True)
     self.environment = Environment.create_environment(flags.env_type, flags.env_name)
+    self.environment.set_split(flags.split)
     self.font = pygame.font.SysFont(None, 20)
     self.value_history = ValueHistory()
     self.state_history = StateHistory()
