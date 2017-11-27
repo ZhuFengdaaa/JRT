@@ -79,7 +79,7 @@ class Trainer(object):
   def prepare(self):
     self.environment = Environment.create_environment(self.env_type,
                                                       self.env_name,
-                                                      self.thread_index)
+                                                      thread_index=self.thread_index)
 
   def stop(self):
     self.environment.stop()

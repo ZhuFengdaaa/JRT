@@ -25,7 +25,7 @@ class Environment(object):
     Environment.LOG_DIR = dir
 
   @staticmethod
-  def create_environment(env_type, env_name, thread_index=0):
+  def create_environment(env_type, env_name, env_args=None, thread_index=0):
     if env_type == 'maze':
       from . import maze_environment
       return maze_environment.MazeEnvironment()
@@ -34,7 +34,7 @@ class Environment(object):
       return lab_environment.LabEnvironment(env_name)
     elif env_type == 'indoor':
       from . import indoor_environment
-      return indoor_environment.IndoorEnvironment(env_name, thread_index)
+      return indoor_environment.IndoorEnvironment(env_name, env_args, thread_index)
     else:
       from . import gym_environment
       return gym_environment.GymEnvironment(env_name)
@@ -80,9 +80,8 @@ class Environment(object):
   def stop(self):
     pass
 
-  # Set data split to use
-  def set_split(self):
-    pass
+  def is_all_scheduled_episodes_done(self):
+    return False
 
   def _subsample(self, a, average_width):
     s = a.shape

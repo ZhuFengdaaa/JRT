@@ -27,7 +27,7 @@ class IndoorEnvironment(environment.Environment):
     simargs = sim_config.get(env_name)
     return simargs.get('objective_size', 0)
 
-  def __init__(self, env_name, thread_index):
+  def __init__(self, env_name, env_args, thread_index):
     environment.Environment.__init__(self)
     
     self.last_state = None
@@ -37,6 +37,10 @@ class IndoorEnvironment(environment.Environment):
     simargs = sim_config.get(env_name)
     simargs['id'] = 'sim%02d' % thread_index
     simargs['logdir'] = os.path.join(IndoorEnvironment.get_log_dir(), simargs['id'])
+
+    # Merge in extra env args
+    if env_args is not None:
+      simargs.update(env_args)
 
     self._sim = RoomSimulator(simargs)
     self._sim_obs_space = self._sim.get_observation_space()
@@ -88,6 +92,5 @@ class IndoorEnvironment(environment.Environment):
     self.last_reward = reward
     return state, reward, terminal, pixel_change
 
-  def set_split(self, split):
-    self._sim.set_episode_schedule(split, end_current_episode=True)
-
+  def is_all_scheduled_episodes_done(self):
+    return self._sim.is_all_scheduled_episodes_done()

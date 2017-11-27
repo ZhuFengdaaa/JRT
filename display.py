@@ -100,8 +100,11 @@ class Display(object):
                                       0.0,
                                       "/cpu:0",
                                       for_display=True)
-    self.environment = Environment.create_environment(flags.env_type, flags.env_name)
-    self.environment.set_split(flags.split)
+    self.environment = Environment.create_environment(flags.env_type, flags.env_name,
+                                                      env_args={'episode_schedule': flags.split,
+                                                                'log_action_trace': flags.log_action_trace,
+                                                                'max_states_per_scene': flags.episodes_per_scene,
+                                                                'episodes_per_scene_test': flags.episodes_per_scene})
     self.font = pygame.font.SysFont(None, 20)
     self.value_history = ValueHistory()
     self.state_history = StateHistory()
