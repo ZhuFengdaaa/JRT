@@ -5,9 +5,6 @@ from __future__ import print_function
 
 import tensorflow as tf
 import numpy as np
-import cv2
-import os
-from collections import deque
 
 from environment.environment import Environment
 from model.model import UnrealModel
