@@ -69,7 +69,8 @@ class Evaluate(object):
 
 
 def main(args):
-  sess = tf.Session()
+  gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.1)  # avoid using all gpu memory
+  sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
   sess.run(tf.global_variables_initializer())
   
   evaluate = Evaluate()
