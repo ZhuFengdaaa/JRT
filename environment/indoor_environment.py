@@ -43,7 +43,7 @@ class IndoorEnvironment(environment.Environment):
       simargs.update(env_args)
 
     self._sim = RoomSimulator(simargs)
-    self._sim_obs_space = self._sim.get_observation_space()
+    self._sim_obs_space = self._sim.get_observation_space(simargs['outputs'])
     self.reset()
 
   def reset(self):
@@ -51,7 +51,7 @@ class IndoorEnvironment(environment.Environment):
     
     self._episode_info = result.get('episode_info')
     self._last_full_state = result.get('observation')
-    obs = self._last_full_state['images']
+    obs = self._last_full_state['observation']['sensors']['color']['data']
     objective = self._last_full_state.get('measurements')
     state = { 'image': self._preprocess_frame(obs), 'objective': objective }
     self.last_state = state
@@ -63,10 +63,10 @@ class IndoorEnvironment(environment.Environment):
         self._sim.close_game()
 
   def _preprocess_frame(self, image):
-    if len(image.shape) == 3 and image.shape[0] == 1:  # assume gray
-        image = np.dstack([image[0], image[0], image[0]])
+    if len(image.shape) == 2:  # assume gray
+        image = np.dstack([image, image, image])
     else:  # assume rgba
-        image = image[0][:, :, :-1]
+        image = image[:, :, :-1]
     image = image.astype(np.float32)
     image = image / 255.0
     return image
@@ -76,7 +76,7 @@ class IndoorEnvironment(environment.Environment):
 
     full_state = self._sim.step(real_action)
     self._last_full_state = full_state  # Last observed state
-    obs = full_state['images']
+    obs = full_state['observation']['sensors']['color']['data']
     reward = full_state['rewards']
     terminal = full_state['terminals']
     objective = full_state.get('measurements')
