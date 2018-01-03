@@ -7,8 +7,8 @@ import numpy as np
 import os
 
 from environment import environment
-from sim.simulator.RoomSimulator import RoomSimulator
-from helpers import sim_config
+from minos.lib.RoomSimulator import RoomSimulator
+from minos.config import sim_config
 
 class IndoorEnvironment(environment.Environment):
 
