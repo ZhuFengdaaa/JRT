@@ -4,7 +4,7 @@ This is an implementation of the UNREAL agent described in [Reinforcement Learni
 
 ## Installation
 
-Follow the [MINOS](https://github.com/minosworld/minos) installation instructions.  Confirm that the minos package is available by running `python3 -c 'import minos; print(minos)'`.
+Follow the [MINOS](https://github.com/minosworld/minos) installation instructions.  Please use the `python-repackage` branch which makes MINOS available as a pip package. Confirm that the minos package is available by running `python3 -c 'import minos; print(minos)'`.
 
 ## Running experiments
 
