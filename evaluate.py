@@ -10,6 +10,7 @@ from environment.environment import Environment
 from model.model import UnrealModel
 from train.experience import ExperienceFrame
 from options import get_options
+import util
 
 # get command line args
 flags = get_options("evaluate")
@@ -32,12 +33,14 @@ class Evaluate(object):
     self.environment = Environment.create_environment(flags.env_type, flags.env_name,
                                                       env_args={'episode_schedule': flags.split,
                                                                 'log_action_trace': flags.log_action_trace,
-                                                                'max_states_per_scene': flags.episodes_per_scene,
+                                                                'seed': flags.seed,
+                                                                # 'max_states_per_scene': flags.episodes_per_scene,
                                                                 'episodes_per_scene_test': flags.episodes_per_scene})
     self.episode_reward = 0
+    self.cnt_success = 0
 
-  def update(self, sess):
-    self.process(sess)
+  def update(self, sess, update_iter):
+    self.process(sess, update_iter)
 
   def is_done(self):
     return self.environment.is_all_scheduled_episodes_done()
@@ -45,7 +48,7 @@ class Evaluate(object):
   def choose_action(self, pi_values):
     return np.random.choice(range(len(pi_values)), p=pi_values)
 
-  def process(self, sess):
+  def process(self, sess, update_iter):
     last_action = self.environment.last_action
     last_reward = np.clip(self.environment.last_reward, -1, 1)
     last_action_reward = ExperienceFrame.concat_action_and_reward(last_action, self.action_size,
@@ -60,10 +63,13 @@ class Evaluate(object):
                                                                                 self.environment.last_state,
                                                                                 last_action_reward)
     action = self.choose_action(pi_values)
-    state, reward, terminal, pixel_change = self.environment.process(action)
+    state, reward, terminal, pixel_change, success = self.environment.process(action)
+    if success:
+        self.cnt_success += 1
     self.episode_reward += reward
   
     if terminal:
+      print(float(self.cnt_success) / 150)
       self.environment.reset()
       self.episode_reward = 0
 
@@ -76,14 +82,22 @@ def main(args):
   evaluate = Evaluate()
   saver = tf.train.Saver()
   checkpoint = tf.train.get_checkpoint_state(flags.checkpoint_dir)
+  print(checkpoint, checkpoint.model_checkpoint_path)
   if checkpoint and checkpoint.model_checkpoint_path:
     saver.restore(sess, checkpoint.model_checkpoint_path)
     print("checkpoint loaded:", checkpoint.model_checkpoint_path)
+    if flags.adda_path != "":
+        util.load_checkpoints(flags.adda_path, "target", "net_-1", sess=sess)
   else:
     print("Could not find old checkpoint")
 
+  update_iter=0
   while not evaluate.is_done():
-    evaluate.update(sess)
+    update_iter+=1
+    evaluate.update(sess, update_iter)
+  if flags.score_file is not None:
+    with open(flags.score_file, "a") as score_file:
+      score_file.write("%.2f\n" % float(evaluate.cnt_success/150*100))
 
     
 if __name__ == '__main__':

@@ -164,7 +164,13 @@ class Application(object):
       # set wall time
       self.wall_t = 0.0
       self.next_save_steps = flags.save_interval_step
-  
+
+    if flags.pretrain_dir != "":
+        checkpoint = tf.train.get_checkpoint_state(flags.pretrain_dir)
+        if checkpoint and checkpoint.model_checkpoint_path: 
+            print("restore pretrained model in {}".format(flags.pretrain_dir))
+            self.saver.restore(self.sess, checkpoint.model_checkpoint_path)
+
     # run training threads
     self.train_threads = []
     for i in range(flags.parallel_size):

@@ -6,9 +6,22 @@ from __future__ import print_function
 import numpy as np
 import os
 
+from PIL import Image
 from environment import environment
 from minos.lib.RoomSimulator import RoomSimulator
 from minos.config import sim_config
+import time
+import json
+from gym.envs.classic_control import rendering
+import cv2
+import time
+
+
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return json.JSONEncoder.default(self, obj)
 
 class IndoorEnvironment(environment.Environment):
 
@@ -29,6 +42,7 @@ class IndoorEnvironment(environment.Environment):
 
   def __init__(self, env_name, env_args, thread_index):
     environment.Environment.__init__(self)
+    self.i_episode = 0
     
     self.last_state = None
     self.last_action = 0
@@ -37,14 +51,23 @@ class IndoorEnvironment(environment.Environment):
     simargs = sim_config.get(env_name)
     simargs['id'] = 'sim%02d' % thread_index
     simargs['logdir'] = os.path.join(IndoorEnvironment.get_log_dir(), simargs['id'])
+    self.viewer = rendering.SimpleImageViewer()
 
     # Merge in extra env args
     if env_args is not None:
       simargs.update(env_args)
 
+    print(simargs)
     self._sim = RoomSimulator(simargs)
     self._sim_obs_space = self._sim.get_observation_space(simargs['outputs'])
     self.reset()
+
+  def render(self, img):
+    img = img[:, :, :-1]
+    img = img.reshape((img.shape[1], img.shape[0], img.shape[2]))
+    img = cv2.resize(img, (512,512), cv2.INTER_CUBIC);
+    self.viewer.imshow(img)
+    time.sleep(.1)
 
   def reset(self):
     result = self._sim.reset()
@@ -52,11 +75,19 @@ class IndoorEnvironment(environment.Environment):
     self._episode_info = result.get('episode_info')
     self._last_full_state = result.get('observation')
     obs = self._last_full_state['observation']['sensors']['color']['data']
+    # self.render(obs)
     objective = self._last_full_state.get('measurements')
     state = { 'image': self._preprocess_frame(obs), 'objective': objective }
     self.last_state = state
     self.last_action = 0
     self.last_reward = 0
+    # self.i_episode = self.i_episode + 1
+    # print("Saving episode {}".format(self.i_episode))
+    # self.directory = "./{}".format(self.i_episode)
+    # os.mkdir(self.directory)
+    # with open(os.path.join(self.directory, "episode_info.txt"), "w") as outfile:
+    #     json.dump(self._episode_info, outfile, indent=4, cls=NumpyEncoder)
+    # self.i = 0
 
   def stop(self):
     if self._sim is not None:
@@ -77,8 +108,14 @@ class IndoorEnvironment(environment.Environment):
     full_state = self._sim.step(real_action)
     self._last_full_state = full_state  # Last observed state
     obs = full_state['observation']['sensors']['color']['data']
+    # self.render(obs)
+    # depth = full_state['observation']['sensors']['depth']['data']
+    # Image.fromarray(obs.astype('uint8')).save(os.path.join(self.directory, 'color{}.png'.format(self.i)))
+    # Image.fromarray(depth, 'L').save(os.path.join(self.directory, 'depth{}.png'.format(self.i)))
+    # self.i+=1
     reward = full_state['rewards']
     terminal = full_state['terminals']
+    success = full_state['success']
     objective = full_state.get('measurements')
 
     if not terminal:
@@ -90,7 +127,7 @@ class IndoorEnvironment(environment.Environment):
     self.last_state = state
     self.last_action = action
     self.last_reward = reward
-    return state, reward, terminal, pixel_change
+    return state, reward, terminal, pixel_change, success
 
   def is_all_scheduled_episodes_done(self):
     return self._sim.is_all_scheduled_episodes_done()

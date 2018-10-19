@@ -258,7 +258,7 @@ class Display(object):
     self.value_history.add_value(v_value)
     
     action = self.choose_action(pi_values)
-    state, reward, terminal, pixel_change = self.environment.process(action)
+    state, reward, terminal, pixel_change, _ = self.environment.process(action)
     self.episode_reward += reward
   
     if terminal:

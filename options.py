@@ -18,12 +18,16 @@ def get_options(option_type):
   tf.app.flags.DEFINE_boolean("use_pixel_change", True, "whether to use pixel change")
   tf.app.flags.DEFINE_boolean("use_value_replay", True, "whether to use value function replay")
   tf.app.flags.DEFINE_boolean("use_reward_prediction", True, "whether to use reward prediction")
+  tf.app.flags.DEFINE_integer("seed", 0, "seed")
+  tf.app.flags.DEFINE_string("adda_path", "", "checkpoint of adda")
 
   tf.app.flags.DEFINE_string("checkpoint_dir", "./checkpoints", "checkpoint directory")
+  tf.app.flags.DEFINE_string("pretrain_dir", "", "pretrain directory")
 
   # For training
   if option_type == 'training':
     tf.app.flags.DEFINE_integer("parallel_size", 4, "parallel thread size")
+    tf.app.flags.DEFINE_boolean("depth", True, "use depth image")
     tf.app.flags.DEFINE_integer("local_t_max", 20, "repeat step size")
     tf.app.flags.DEFINE_float("rmsp_alpha", 0.99, "decay parameter for rmsprop")
     tf.app.flags.DEFINE_float("rmsp_epsilon", 0.1, "epsilon parameter for rmsprop")
@@ -49,8 +53,9 @@ def get_options(option_type):
 
   # For evaluation or display
   if option_type in ('evaluate', 'display'):
-    tf.app.flags.DEFINE_string("split", "val", "What data split to use")
-    tf.app.flags.DEFINE_integer("episodes_per_scene", 1, "How many episodes to test per scene")
+    tf.app.flags.DEFINE_string("split", "test", "What data split to use")
+    tf.app.flags.DEFINE_integer("episodes_per_scene", 10, "How many episodes to test per scene")
     tf.app.flags.DEFINE_boolean("log_action_trace", True, "Whether to log action trace")
+    tf.app.flags.DEFINE_string("score_file", None,"write out score file")
 
   return tf.app.flags.FLAGS
