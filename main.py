@@ -93,6 +93,8 @@ class Application(object):
                                       flags.pixel_change_lambda,
                                       flags.entropy_beta,
                                       device)
+    variables = tf.trainable_variables()
+    print(variables)
     self.trainers = []
     
     learning_rate_input = tf.placeholder("float")

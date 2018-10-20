@@ -57,8 +57,9 @@ class UnrealModel(object):
     scope_name = "net_{0}".format(self._thread_index)
     with tf.device(self._device), tf.variable_scope(scope_name) as scope:
       # lstm
-      self.lstm_cell = tf.contrib.rnn.BasicLSTMCell(256, state_is_tuple=True)
-      
+      def basic_cell():
+       return tf.contrib.rnn.BasicLSTMCell(256, state_is_tuple=True) 
+      self.lstm_cell = tf.contrib.rnn.MultiRNNCell([basic_cell() for _ in range(2)])
       # [base A3C network]
       self._create_base_network()
 
@@ -93,11 +94,12 @@ class UnrealModel(object):
     
     if self._use_lstm:
       # LSTM layer
-      self.base_initial_lstm_state0 = tf.placeholder(tf.float32, [1, 256], name='base_initial_lstm_state0')
-      self.base_initial_lstm_state1 = tf.placeholder(tf.float32, [1, 256], name='base_initial_lstm_state1')
+      self.base_initial_lstm_state0 = tf.placeholder(tf.float32, [2, 1, 256], name='base_initial_lstm_state0')
+      self.base_initial_lstm_state1 = tf.placeholder(tf.float32, [2, 1, 256], name='base_initial_lstm_state1')
+      state_list0 = tf.unstack(self.base_initial_lstm_state0, axis=0)
+      state_list1 = tf.unstack(self.base_initial_lstm_state1, axis=0)
 
-      self.base_initial_lstm_state = tf.contrib.rnn.LSTMStateTuple(self.base_initial_lstm_state0,
-                                                                   self.base_initial_lstm_state1)
+      self.base_initial_lstm_state = tuple([tf.contrib.rnn.LSTMStateTuple(state_list0[idx], state_list1[idx]) for idx in range(2)])
 
       self.base_lstm_outputs, self.base_lstm_state = \
         self._base_lstm_layer(base_conv_output,
