@@ -371,7 +371,9 @@ class Trainer(object):
     }
 
     if self.use_lstm:
-      feed_dict[self.local_network.base_initial_lstm_state] = start_lstm_state
+      # feed_dict[self.local_network.base_initial_lstm_state] = start_lstm_state
+      feed_dict[self.local_network.base_initial_lstm_state0] = start_lstm_state[0]
+      feed_dict[self.local_network.base_initial_lstm_state1] = start_lstm_state[1]
 
     # [Pixel change]
     if self.use_pixel_change:

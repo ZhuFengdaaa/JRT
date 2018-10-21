@@ -391,8 +391,8 @@ class UnrealModel(object):
 
   def reset_state(self):
     if self._use_lstm:
-      self.base_lstm_state_out = tf.contrib.rnn.LSTMStateTuple(np.zeros([1, 256]),
-                                                               np.zeros([1, 256]))
+      self.base_lstm_state_out = tf.contrib.rnn.LSTMStateTuple(np.zeros([2, 1, 256]),
+                                                               np.zeros([2, 1, 256]))
 
   def run_base_policy_and_value(self, sess, s_t, last_action_reward):
     # This run_base_policy_and_value() is used when forward propagating.
