@@ -13,9 +13,12 @@ import time
 
 from environment.environment import Environment
 from model.model import UnrealModel
+from model.model_unreal import Discriminator
 from train.trainer import Trainer
 from train.rmsprop_applier import RMSPropApplier
 from options import get_options
+import util
+
 
 USE_GPU = True # To use GPU, set True
 
@@ -83,6 +86,21 @@ class Application(object):
                                               flags.env_name)
     objective_size = Environment.get_objective_size(flags.env_type, flags.env_name)
 
+    print(flags.use_pixel_change, flags.use_value_replay, flags.use_reward_prediction)
+
+    with tf.variable_scope("source") as scope:
+        self.source_network = UnrealModel(action_size,
+                                      objective_size,
+                                      -1,
+                                      flags.use_lstm,
+                                      flags.use_pixel_change,
+                                      flags.use_value_replay,
+                                      flags.use_reward_prediction,
+                                      flags.pixel_change_lambda,
+                                      flags.entropy_beta,
+                                      device)
+        self.source_network.prepare_loss()
+
     self.global_network = UnrealModel(action_size,
                                       objective_size,
                                       -1,
@@ -93,6 +111,15 @@ class Application(object):
                                       flags.pixel_change_lambda,
                                       flags.entropy_beta,
                                       device)
+    self.global_discriminator = Discriminator(device=device, thread_index=-1)
+    print("load source cnn+policy")
+    util.load_checkpoints("/home/linchao/unreal/suncg_s/checkpoint-13100068", "net_-1", "source/net_-1")
+    print("load target cnn+policy")
+    util.load_checkpoints("/home/linchao/unreal/suncg_s/checkpoint-13100068", "net_-1", "net_-1")
+    print("overwrite target cnn")
+    util.load_checkpoints("/home/linchao/my_adda/saved_models/exp_012/checkpoint-1000", "target", "net_-1")
+    print("load discriminator")
+    util.load_checkpoints("/home/linchao/my_adda/saved_models/exp_012/checkpoint-1000", "disc", "disc_-1")
     self.trainers = []
     
     learning_rate_input = tf.placeholder("float")
@@ -107,6 +134,8 @@ class Application(object):
     for i in range(flags.parallel_size):
       trainer = Trainer(i,
                         self.global_network,
+                        self.source_network,
+                        self.global_discriminator,
                         initial_learning_rate,
                         learning_rate_input,
                         grad_applier,
@@ -143,7 +172,7 @@ class Application(object):
                                                 self.sess.graph)
     
     # init or load checkpoint with saver
-    self.saver = tf.train.Saver(self.global_network.get_vars(), max_to_keep=0)
+    self.saver = tf.train.Saver(self.global_network.get_vars() + self.global_discriminator.get_vars(), max_to_keep=0)
     
     checkpoint = tf.train.get_checkpoint_state(flags.checkpoint_dir)
     if checkpoint and checkpoint.model_checkpoint_path:

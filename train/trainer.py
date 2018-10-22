@@ -8,7 +8,10 @@ import time
 
 from environment.environment import Environment
 from model.model import UnrealModel
+from model.model_unreal import Discriminator
 from train.experience import Experience, ExperienceFrame
+import tensorflow as tf
+import util
 
 LOG_INTERVAL = 100
 PERFORMANCE_LOG_INTERVAL = 1000
@@ -18,6 +21,8 @@ class Trainer(object):
   def __init__(self,
                thread_index,
                global_network,
+               source_network,
+               global_discriminator,
                initial_learning_rate,
                learning_rate_input,
                grad_applier,
@@ -52,6 +57,7 @@ class Trainer(object):
     self.action_size = Environment.get_action_size(env_type, env_name)
     self.objective_size = Environment.get_objective_size(env_type, env_name)
     
+    self.source_network = source_network
     self.local_network = UnrealModel(self.action_size,
                                      self.objective_size,
                                      thread_index,
@@ -64,11 +70,37 @@ class Trainer(object):
                                      device)
     self.local_network.prepare_loss()
 
-    self.apply_gradients = grad_applier.minimize_local(self.local_network.total_loss,
-                                                       global_network.get_vars(),
-                                                       self.local_network.get_vars())
+    with tf.device(device):
+        mimic_loss = tf.nn.sigmoid_cross_entropy_with_logits(logits=self.local_network.base_pi_logits,
+                                            labels=self.source_network.base_pi)
+        adversary_ft = tf.concat([self.source_network.h_conv2, self.local_network.h_conv2], 0)
+        self.local_discriminator = Discriminator(adversary_ft, device=device, thread_index=thread_index)
+        adversary_logits = self.local_discriminator.output
+        label_shape = tf.stack([tf.cast(tf.shape(adversary_logits)[0]/2, tf.int32), tf.shape(adversary_logits)[1]])
+        label_ms = tf.fill(label_shape, 1.0)
+        label_mt = tf.fill(label_shape, 0.0)
+        # label_ms = tf.fill([1, 1], 1.0)
+        # label_mt = tf.fill([1, 1], 0.0)
+        adversary_label = tf.concat([label_ms, label_mt], 0)
+        # adversary_logits = tf.Print(adversary_logits, [tf.shape(adversary_logits)], message="adversary_logits: ")
+        # adversary_label = tf.Print(adversary_label, [tf.shape(adversary_label)], message="adversary_logits: ")
+        mapping_loss = tf.nn.sigmoid_cross_entropy_with_logits(logits = adversary_logits, labels = 1 - adversary_label)
+        # mimic_loss = tf.Print(mimic_loss, [mimic_loss], message="mimic_loss")
+        # mapping_loss = tf.Print(mapping_loss, [mapping_loss], message="mapping_loss")
+        adversary_loss = tf.nn.sigmoid_cross_entropy_with_logits(logits = adversary_logits, labels = adversary_label)
+        
+        mapping_loss_ = tf.reduce_mean(mapping_loss)
+        mimic_loss_ = tf.reduce_mean(mimic_loss)
+        # adversary_loss = tf.Print(adversary_loss, [tf.shape(adversary_loss)], message="adversary_loss")
+        total_loss = self.local_network.total_loss + mapping_loss_ + mimic_loss_
+    #print("load target cnn")
+    #util.load_checkpoints("/home/linchao/my_adda/saved_models/exp_012/checkpoint-1000", "target", "net_{}".format(thread_index))
+    #print("load target policy")
+    #util.load_checkpoints("/home/linchao/unreal/suncg_s/checkpoint-13100068", "net_-1", "net_{}".format(thread_index))
+    self.apply_network_gradients = grad_applier.minimize_local(total_loss,global_network.get_vars(), self.local_network.get_vars())
+    self.apply_discriminator_gradients =  grad_applier.minimize_local(adversary_loss,global_discriminator.get_vars(),self.local_discriminator.get_vars())
     
-    self.sync = self.local_network.sync_from(global_network)
+    self.sync = [self.local_network.sync_from(global_network)] + [self.local_discriminator.sync_from(global_discriminator)]
     self.experience = Experience(self.experience_history_size)
     self.local_t = 0
     self.initial_learning_rate = initial_learning_rate
@@ -210,6 +242,7 @@ class Trainer(object):
           
         self.episode_reward = 0
         self.environment.reset()
+        self.source_network.reset_state()
         self.local_network.reset_state()
         break
 
@@ -366,12 +399,19 @@ class Trainer(object):
       self.local_network.base_a: batch_a,
       self.local_network.base_adv: batch_adv,
       self.local_network.base_r: batch_R,
+      self.source_network.base_input: batch_si,
+      self.source_network.base_last_action_reward_input: batch_last_action_rewards,
+      self.source_network.base_a: batch_a,
+      self.source_network.base_adv: batch_adv,
+      self.source_network.base_r: batch_R,
+
       # [common]
       self.learning_rate_input: cur_learning_rate
     }
 
     if self.use_lstm:
       feed_dict[self.local_network.base_initial_lstm_state] = start_lstm_state
+      feed_dict[self.source_network.base_initial_lstm_state] = start_lstm_state
 
     # [Pixel change]
     if self.use_pixel_change:
@@ -381,7 +421,12 @@ class Trainer(object):
         self.local_network.pc_input: batch_pc_si,
         self.local_network.pc_last_action_reward_input: batch_pc_last_action_reward,
         self.local_network.pc_a: batch_pc_a,
-        self.local_network.pc_r: batch_pc_R
+        self.local_network.pc_r: batch_pc_R,
+        self.source_network.pc_input: batch_pc_si,
+        self.source_network.pc_last_action_reward_input: batch_pc_last_action_reward,
+        self.source_network.pc_a: batch_pc_a,
+        self.source_network.pc_r: batch_pc_R
+
       }
       feed_dict.update(pc_feed_dict)
 
@@ -392,7 +437,10 @@ class Trainer(object):
       vr_feed_dict = {
         self.local_network.vr_input: batch_vr_si,
         self.local_network.vr_last_action_reward_input : batch_vr_last_action_reward,
-        self.local_network.vr_r: batch_vr_R
+        self.local_network.vr_r: batch_vr_R,
+        self.source_network.vr_input: batch_vr_si,
+        self.source_network.vr_last_action_reward_input : batch_vr_last_action_reward,
+        self.source_network.vr_r: batch_vr_R
       }
       feed_dict.update(vr_feed_dict)
 
@@ -401,12 +449,14 @@ class Trainer(object):
       batch_rp_si, batch_rp_c = self._process_rp()
       rp_feed_dict = {
         self.local_network.rp_input: batch_rp_si,
-        self.local_network.rp_c_target: batch_rp_c
+        self.local_network.rp_c_target: batch_rp_c,
+        self.source_network.rp_input: batch_rp_si,
+        self.source_network.rp_c_target: batch_rp_c
       }
       feed_dict.update(rp_feed_dict)
 
     # Calculate gradients and copy them to global network.
-    sess.run( self.apply_gradients, feed_dict=feed_dict )
+    sess.run( [self.apply_network_gradients, self.apply_discriminator_gradients], feed_dict=feed_dict )
     
     self._print_log(global_t)
     

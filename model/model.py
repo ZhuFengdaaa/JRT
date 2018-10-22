@@ -89,7 +89,7 @@ class UnrealModel(object):
     self.base_last_action_reward_input = tf.placeholder("float", [None, self._action_size+1+self._objective_size])
 
     # Conv layers
-    base_conv_output = self._base_conv_layers(self.base_input)
+    base_conv_output, self.h_conv2 = self._base_conv_layers(self.base_input)
     
     if self._use_lstm:
       # LSTM layer
@@ -104,7 +104,7 @@ class UnrealModel(object):
                               self.base_last_action_reward_input,
                               self.base_initial_lstm_state)
 
-      self.base_pi = self._base_policy_layer(self.base_lstm_outputs) # policy output
+      self.base_pi, self.base_pi_logits = self._base_policy_layer(self.base_lstm_outputs) # policy output
       self.base_v  = self._base_value_layer(self.base_lstm_outputs)  # value output
     else:
       self.base_fcn_outputs = self._base_fcn_layer(base_conv_output,
@@ -121,8 +121,9 @@ class UnrealModel(object):
 
       # Nodes
       h_conv1 = tf.nn.relu(self._conv2d(state_input, W_conv1, 4) + b_conv1) # stride=4 => 19x19x16
-      h_conv2 = tf.nn.relu(self._conv2d(h_conv1,     W_conv2, 2) + b_conv2) # stride=2 => 9x9x32
-      return h_conv2
+      h_conv2_noact = self._conv2d(h_conv1,     W_conv2, 2) + b_conv2
+      h_conv2 = tf.nn.relu(h_conv2_noact) # stride=2 => 9x9x32
+      return h_conv2, h_conv2_noact
 
 
   def _base_fcn_layer(self, conv_output, last_action_reward_objective_input,
@@ -180,8 +181,9 @@ class UnrealModel(object):
       # Weight for policy output layer
       W_fc_p, b_fc_p = self._fc_variable([input_size, self._action_size], "base_fc_p")
       # Policy (output)
-      base_pi = tf.nn.softmax(tf.matmul(lstm_outputs, W_fc_p) + b_fc_p)
-      return base_pi
+      base_pi_logits = tf.matmul(lstm_outputs, W_fc_p) + b_fc_p
+      base_pi = tf.nn.softmax(base_pi_logits)
+      return base_pi, base_pi_logits
 
 
   def _base_value_layer(self, lstm_outputs, reuse=False):
@@ -204,7 +206,7 @@ class UnrealModel(object):
     self.pc_last_action_reward_input = tf.placeholder("float", [None, self._action_size+1+self._objective_size])
 
     # pc conv layers
-    pc_conv_output = self._base_conv_layers(self.pc_input, reuse=True)
+    pc_conv_output, _ = self._base_conv_layers(self.pc_input, reuse=True)
 
     if self._use_lstm:
       # pc lstm layers
@@ -248,14 +250,14 @@ class UnrealModel(object):
                                                 W_pc_deconv_a, 9, 9, 2) +
                                  b_pc_deconv_a)
       # Advantage mean
-      h_pc_deconv_a_mean = tf.reduce_mean(h_pc_deconv_a, reduction_indices=3, keep_dims=True)
+      h_pc_deconv_a_mean = tf.reduce_mean(h_pc_deconv_a, reduction_indices=3, keepdims=True)
 
       # {Pixel change Q (output)
       pc_q = h_pc_deconv_v + h_pc_deconv_a - h_pc_deconv_a_mean
       #(-1, 20, 20, action_size)
 
       # Max Q
-      pc_q_max = tf.reduce_max(pc_q, reduction_indices=3, keep_dims=False)
+      pc_q_max = tf.reduce_max(pc_q, reduction_indices=3, keepdims=False)
       #(-1, 20, 20)
 
       return pc_q, pc_q_max
@@ -269,7 +271,7 @@ class UnrealModel(object):
     self.vr_last_action_reward_input = tf.placeholder("float", [None, self._action_size+1+self._objective_size])
 
     # VR conv layers
-    vr_conv_output = self._base_conv_layers(self.vr_input, reuse=True)
+    vr_conv_output, _ = self._base_conv_layers(self.vr_input, reuse=True)
 
     if self._use_lstm:
       # pc lstm layers
@@ -291,7 +293,7 @@ class UnrealModel(object):
     self.rp_input = tf.placeholder("float", [3, self._image_shape[0], self._image_shape[1], 3])
 
     # RP conv layers
-    rp_conv_output = self._base_conv_layers(self.rp_input, reuse=True)
+    rp_conv_output, _ = self._base_conv_layers(self.rp_input, reuse=True)
     rp_conv_output_reshaped = tf.reshape(rp_conv_output, [1,9*9*32*3])
     
     with tf.variable_scope("rp_fc") as scope:
@@ -339,7 +341,7 @@ class UnrealModel(object):
 
     # Extract Q for taken action
     pc_qa_ = tf.multiply(self.pc_q, pc_a_reshaped)
-    pc_qa = tf.reduce_sum(pc_qa_, reduction_indices=3, keep_dims=False)
+    pc_qa = tf.reduce_sum(pc_qa_, reduction_indices=3, keepdims=False)
     # (-1, 20, 20)
       
     # TD target for Q
