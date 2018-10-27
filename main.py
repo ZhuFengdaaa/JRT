@@ -166,6 +166,9 @@ class Application(object):
     # summary for tensorboard
     self.score_input = tf.placeholder(tf.int32)
     tf.summary.scalar("score", self.score_input)
+    tf.summary.scalar("policy loss", trainer.local_network.total_loss)
+    tf.summary.scalar("mapping loss", trainer.mapping_loss)
+    tf.summary.scalar("mimic loss", trainer.mimic_loss)
     
     self.summary_op = tf.summary.merge_all()
     self.summary_writer = tf.summary.FileWriter(flags.log_dir,

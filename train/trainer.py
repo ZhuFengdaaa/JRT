@@ -89,10 +89,10 @@ class Trainer(object):
         # mapping_loss = tf.Print(mapping_loss, [mapping_loss], message="mapping_loss")
         adversary_loss = tf.nn.sigmoid_cross_entropy_with_logits(logits = adversary_logits, labels = adversary_label)
         
-        mapping_loss_ = tf.reduce_mean(mapping_loss)
-        mimic_loss_ = tf.reduce_mean(mimic_loss)
+        self.mapping_loss = tf.reduce_mean(mapping_loss)
+        self.mimic_loss = tf.reduce_mean(mimic_loss)
         # adversary_loss = tf.Print(adversary_loss, [tf.shape(adversary_loss)], message="adversary_loss")
-        total_loss = self.local_network.total_loss + mapping_loss_ + mimic_loss_
+        total_loss = self.local_network.total_loss + self.mapping_loss + self.mimic_loss
     #print("load target cnn")
     #util.load_checkpoints("/home/linchao/my_adda/saved_models/exp_012/checkpoint-1000", "target", "net_{}".format(thread_index))
     #print("load target policy")
