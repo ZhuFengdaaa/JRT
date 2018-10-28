@@ -69,9 +69,10 @@ class Trainer(object):
                                      entropy_beta,
                                      device)
     self.local_network.prepare_loss()
+    self.i=0
 
     with tf.device(device):
-        mimic_loss = tf.nn.sigmoid_cross_entropy_with_logits(logits=self.local_network.base_pi_logits,
+        mimic_loss = tf.nn.softmax_cross_entropy_with_logits(logits=self.local_network.base_pi_logits,
                                             labels=self.source_network.base_pi)
         adversary_ft = tf.concat([self.source_network.h_conv2, self.local_network.h_conv2], 0)
         self.local_discriminator = Discriminator(adversary_ft, device=device, thread_index=thread_index)
@@ -89,9 +90,13 @@ class Trainer(object):
         # mapping_loss = tf.Print(mapping_loss, [mapping_loss], message="mapping_loss")
         adversary_loss = tf.nn.sigmoid_cross_entropy_with_logits(logits = adversary_logits, labels = adversary_label)
         
-        self.mapping_loss = tf.reduce_mean(mapping_loss)
-        self.mimic_loss = tf.reduce_mean(mimic_loss)
+        self.mapping_loss = tf.reduce_mean(mapping_loss) * 10
+        self.mimic_loss = tf.reduce_mean(mimic_loss) * 10
         # adversary_loss = tf.Print(adversary_loss, [tf.shape(adversary_loss)], message="adversary_loss")
+        tf.summary.scalar("policy loss", self.local_network.total_loss)
+        tf.summary.scalar("mapping loss", self.mapping_loss)
+        tf.summary.scalar("mimic loss", self.mimic_loss)
+        self.summary_op = tf.summary.merge_all()
         total_loss = self.local_network.total_loss + self.mapping_loss + self.mimic_loss
     #print("load target cnn")
     #util.load_checkpoints("/home/linchao/my_adda/saved_models/exp_012/checkpoint-1000", "target", "net_{}".format(thread_index))
@@ -107,6 +112,7 @@ class Trainer(object):
     self.episode_reward = 0
     # For log output
     self.prev_local_t = 0
+    self.writer = tf.summary.FileWriter('./log_dir')
 
   def prepare(self):
     self.environment = Environment.create_environment(self.env_type,
@@ -237,8 +243,8 @@ class Trainer(object):
         terminal_end = True
         print("score={}".format(self.episode_reward))
 
-        self._record_score(sess, summary_writer, summary_op, score_input,
-                           self.episode_reward, global_t)
+        # self._record_score(sess, summary_writer, summary_op, score_input,
+        #                   self.episode_reward, global_t)
           
         self.episode_reward = 0
         self.environment.reset()
@@ -456,8 +462,9 @@ class Trainer(object):
       feed_dict.update(rp_feed_dict)
 
     # Calculate gradients and copy them to global network.
-    sess.run( [self.apply_network_gradients, self.apply_discriminator_gradients], feed_dict=feed_dict )
-    
+    summary, _1, _2 = sess.run( [self.summary_op, self.apply_network_gradients, self.apply_discriminator_gradients], feed_dict=feed_dict )
+    self.writer.add_summary(summary, self.i)
+    self.i+=1
     self._print_log(global_t)
     
     # Return advanced local step size
