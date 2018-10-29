@@ -39,7 +39,8 @@ class Trainer(object):
                gamma_pc,
                experience_history_size,
                max_global_time_step,
-               device):
+               device,
+               checkpoint_dir):
 
     self.thread_index = thread_index
     self.learning_rate_input = learning_rate_input
@@ -70,6 +71,7 @@ class Trainer(object):
                                      device)
     self.local_network.prepare_loss()
     self.i=0
+    self.checkpoint_dir = checkpoint_dir
 
     with tf.device(device):
         mimic_loss = tf.nn.softmax_cross_entropy_with_logits(logits=self.local_network.base_pi_logits,
@@ -90,12 +92,12 @@ class Trainer(object):
         # mapping_loss = tf.Print(mapping_loss, [mapping_loss], message="mapping_loss")
         adversary_loss = tf.nn.sigmoid_cross_entropy_with_logits(logits = adversary_logits, labels = adversary_label)
         
-        self.mapping_loss = tf.reduce_mean(mapping_loss) * 10
-        self.mimic_loss = tf.reduce_mean(mimic_loss) * 10
+        self.mapping_loss = tf.reduce_mean(mapping_loss) * 0.1
+        self.mimic_loss = tf.reduce_mean(mimic_loss) * 0
         # adversary_loss = tf.Print(adversary_loss, [tf.shape(adversary_loss)], message="adversary_loss")
-        tf.summary.scalar("policy loss", self.local_network.total_loss)
-        tf.summary.scalar("mapping loss", self.mapping_loss)
-        tf.summary.scalar("mimic loss", self.mimic_loss)
+        tf.summary.scalar("policy_loss", self.local_network.total_loss)
+        tf.summary.scalar("mapping_loss", self.mapping_loss)
+        tf.summary.scalar("mimic_loss", self.mimic_loss)
         self.summary_op = tf.summary.merge_all()
         total_loss = self.local_network.total_loss + self.mapping_loss + self.mimic_loss
     #print("load target cnn")
@@ -112,7 +114,7 @@ class Trainer(object):
     self.episode_reward = 0
     # For log output
     self.prev_local_t = 0
-    self.writer = tf.summary.FileWriter('./log_dir')
+    self.writer = tf.summary.FileWriter(self.checkpoint_dir)
 
   def prepare(self):
     self.environment = Environment.create_environment(self.env_type,
