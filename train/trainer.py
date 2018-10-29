@@ -92,13 +92,14 @@ class Trainer(object):
         # mapping_loss = tf.Print(mapping_loss, [mapping_loss], message="mapping_loss")
         adversary_loss = tf.nn.sigmoid_cross_entropy_with_logits(logits = adversary_logits, labels = adversary_label)
         
-        self.mapping_loss = tf.reduce_mean(mapping_loss) * 0.1
-        self.mimic_loss = tf.reduce_mean(mimic_loss) * 0
+        self.mapping_loss = tf.reduce_mean(mapping_loss) * 1
+        self.mimic_loss = tf.reduce_mean(mimic_loss) * 1
         # adversary_loss = tf.Print(adversary_loss, [tf.shape(adversary_loss)], message="adversary_loss")
-        tf.summary.scalar("policy_loss", self.local_network.total_loss)
-        tf.summary.scalar("mapping_loss", self.mapping_loss)
-        tf.summary.scalar("mimic_loss", self.mimic_loss)
-        self.summary_op = tf.summary.merge_all()
+        if self.thread_index == 0:
+            tf.summary.scalar("policy_loss", self.local_network.total_loss)
+            tf.summary.scalar("mapping_loss", self.mapping_loss)
+            tf.summary.scalar("mimic_loss", self.mimic_loss)
+            self.summary_op = tf.summary.merge_all()
         total_loss = self.local_network.total_loss + self.mapping_loss + self.mimic_loss
     #print("load target cnn")
     #util.load_checkpoints("/home/linchao/my_adda/saved_models/exp_012/checkpoint-1000", "target", "net_{}".format(thread_index))
@@ -464,8 +465,12 @@ class Trainer(object):
       feed_dict.update(rp_feed_dict)
 
     # Calculate gradients and copy them to global network.
-    summary, _1, _2 = sess.run( [self.summary_op, self.apply_network_gradients, self.apply_discriminator_gradients], feed_dict=feed_dict )
-    self.writer.add_summary(summary, self.i)
+    if self.thread_index == 0:
+        summary, _1, _2 = sess.run( [self.summary_op, self.apply_network_gradients, self.apply_discriminator_gradients], feed_dict=feed_dict )
+        self.writer.add_summary(summary, self.i)
+    else:
+        _1, _2 = sess.run( [self.apply_network_gradients, self.apply_discriminator_gradients], feed_dict=feed_dict )
+        
     self.i+=1
     self._print_log(global_t)
     
