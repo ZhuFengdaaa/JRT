@@ -81,15 +81,15 @@ def main(args):
   
   evaluate = Evaluate()
   saver = tf.train.Saver()
-  checkpoint = tf.train.get_checkpoint_state(flags.checkpoint_dir)
-  print(checkpoint, checkpoint.model_checkpoint_path)
-  if checkpoint and checkpoint.model_checkpoint_path:
-    saver.restore(sess, checkpoint.model_checkpoint_path)
-    print("checkpoint loaded:", checkpoint.model_checkpoint_path)
-    if flags.adda_path != "":
-        util.load_checkpoints(flags.adda_path, "target", "net_-1", sess=sess)
-  else:
-    print("Could not find old checkpoint")
+  # checkpoint = tf.train.get_checkpoint_state(flags.checkpoint_dir)
+  # print(checkpoint, checkpoint.model_checkpoint_path)
+  # if checkpoint and checkpoint.model_checkpoint_path:
+  saver.restore(sess, flags.checkpoint_dir)
+  print("checkpoint loaded:", flags.checkpoint_dir)
+  if flags.adda_path != "":
+      util.load_checkpoints(flags.adda_path, "target", "net_-1", sess=sess)
+  # else:
+  #   print("Could not find old checkpoint")
 
   update_iter=0
   while not evaluate.is_done():
