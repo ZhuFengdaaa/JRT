@@ -44,6 +44,9 @@ def get_options(option_type):
     tf.app.flags.DEFINE_integer("max_time_step", int(13.2 * 10**6), "max time steps")
     tf.app.flags.DEFINE_integer("save_interval_step", 100 * 1000, "saving interval steps")
     tf.app.flags.DEFINE_float("grad_norm_clip", 40.0, "gradient norm clipping")
+    tf.app.flags.DEFINE_float("adversarial_weight", 0.0, "")
+    tf.app.flags.DEFINE_float("mapping_weight", 0.0, "")
+    tf.app.flags.DEFINE_float("mimic_weight", 0.0, "")
 
   # For display
   if option_type == 'display':

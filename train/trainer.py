@@ -39,6 +39,9 @@ class Trainer(object):
                gamma_pc,
                experience_history_size,
                max_global_time_step,
+               adversarial_weight,
+               mapping_weight,
+               mimic_weight,
                device,
                checkpoint_dir):
 
@@ -92,8 +95,8 @@ class Trainer(object):
         # mapping_loss = tf.Print(mapping_loss, [mapping_loss], message="mapping_loss")
         adversary_loss = tf.nn.sigmoid_cross_entropy_with_logits(logits = adversary_logits, labels = adversary_label)
         
-        self.mapping_loss = tf.reduce_mean(mapping_loss) * 0
-        self.mimic_loss = tf.reduce_mean(mimic_loss) * 0.1
+        self.mapping_loss = tf.reduce_mean(mapping_loss) * mapping_weight
+        self.mimic_loss = tf.reduce_mean(mimic_loss) * mimic_weight
         # adversary_loss = tf.Print(adversary_loss, [tf.shape(adversary_loss)], message="adversary_loss")
         if self.thread_index == 0:
             tf.summary.scalar("policy_loss", self.local_network.total_loss)

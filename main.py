@@ -156,6 +156,9 @@ class Application(object):
                         flags.gamma_pc,
                         flags.experience_history_size,
                         flags.max_time_step,
+                        flags.adversarial_weight,
+                        flags.mapping_weight,
+                        flags.mimic_weight,
                         device,
                         flags.checkpoint_dir)
       self.trainers.append(trainer)
