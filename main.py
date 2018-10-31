@@ -117,6 +117,8 @@ class Application(object):
     util.load_checkpoints("/home/linchao/unreal/suncg_s_a3c/checkpoint-13100082", "net_-1", "source/net_-1")
     print("load target cnn+policy")
     util.load_checkpoints("/home/linchao/unreal/suncg_s_a3c/checkpoint-13100082", "net_-1", "net_-1")
+    print("overwrite source cnn")
+    util.load_checkpoints("/home/linchao/my_adda/saved_models/exp_016.load/checkpoint-1000", "target", "source/net_-1")
     print("overwrite target cnn")
     # util.load_checkpoints("/home/linchao/my_adda/saved_models/exp_012/checkpoint-1000", "target", "net_-1")
     util.load_checkpoints("/home/linchao/my_adda/saved_models/exp_016.load/checkpoint-1000", "target", "net_-1")

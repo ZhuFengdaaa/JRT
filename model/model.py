@@ -79,7 +79,7 @@ class UnrealModel(object):
       self.reset_state()
 
       self.variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope_name)
-
+      self.no_cnn_variables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope_name+"/(?!base_conv)")
 
   def _create_base_network(self):
     # State (Base image input)
@@ -473,7 +473,9 @@ class UnrealModel(object):
   
   def get_vars(self):
     return self.variables
-  
+
+  def get_no_cnn_vars(self):
+    return self.no_cnn_variables
 
   def sync_from(self, src_network, name=None):
     src_vars = src_network.get_vars()
