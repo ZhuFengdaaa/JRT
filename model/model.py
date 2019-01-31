@@ -89,7 +89,7 @@ class UnrealModel(object):
     self.base_last_action_reward_input = tf.placeholder("float", [None, self._action_size+1+self._objective_size])
 
     # Conv layers
-    base_conv_output = self._base_conv_layers(self.base_input)
+    self.base_conv_output = self._base_conv_layers(self.base_input)
     
     if self._use_lstm:
       # LSTM layer
@@ -100,14 +100,14 @@ class UnrealModel(object):
                                                                    self.base_initial_lstm_state1)
 
       self.base_lstm_outputs, self.base_lstm_state = \
-        self._base_lstm_layer(base_conv_output,
+        self._base_lstm_layer(self.base_conv_output,
                               self.base_last_action_reward_input,
                               self.base_initial_lstm_state)
 
       self.base_pi = self._base_policy_layer(self.base_lstm_outputs) # policy output
       self.base_v  = self._base_value_layer(self.base_lstm_outputs)  # value output
     else:
-      self.base_fcn_outputs = self._base_fcn_layer(base_conv_output,
+      self.base_fcn_outputs = self._base_fcn_layer(self.base_conv_output,
                                                    self.base_last_action_reward_input)
       self.base_pi = self._base_policy_layer(self.base_fcn_outputs) # policy output
       self.base_v  = self._base_value_layer(self.base_fcn_outputs)  # value output
@@ -396,7 +396,7 @@ class UnrealModel(object):
     # This run_base_policy_and_value() is used when forward propagating.
     # so the step size is 1.
     if self._use_lstm:
-      pi_out, v_out, self.base_lstm_state_out = sess.run( [self.base_pi, self.base_v, self.base_lstm_state],
+      base_conv_output, pi_out, v_out, self.base_lstm_state_out = sess.run( [self.base_conv_output, self.base_pi, self.base_v, self.base_lstm_state],
                                                           feed_dict = {self.base_input : [s_t['image']],
                                                                        self.base_last_action_reward_input : [last_action_reward],
                                                                        self.base_initial_lstm_state0 : self.base_lstm_state_out[0],
@@ -407,14 +407,14 @@ class UnrealModel(object):
                                             self.base_last_action_reward_input : [last_action_reward]} )
 
     # pi_out: (1,3), v_out: (1)
-    return (pi_out[0], v_out[0])
+    return (pi_out[0], v_out[0], base_conv_output)
 
   
   def run_base_policy_value_pc_q(self, sess, s_t, last_action_reward):
     # For display tool.
     if self._use_lstm:
-      pi_out, v_out, self.base_lstm_state_out, q_disp_out, q_max_disp_out = \
-          sess.run( [self.base_pi, self.base_v, self.base_lstm_state, self.pc_q_disp, self.pc_q_max_disp],
+      base_conv_output, pi_out, v_out, self.base_lstm_state_out, q_disp_out, q_max_disp_out = \
+          sess.run( [self.base_conv_output, self.base_pi, self.base_v, self.base_lstm_state, self.pc_q_disp, self.pc_q_max_disp],
                     feed_dict = {self.base_input : [s_t['image']],
                                  self.base_last_action_reward_input : [last_action_reward],
                                  self.base_initial_lstm_state0 : self.base_lstm_state_out[0],
@@ -426,7 +426,7 @@ class UnrealModel(object):
                                self.base_last_action_reward_input : [last_action_reward] })
 
     # pi_out: (1,3), v_out: (1), q_disp_out(1,20,20, action_size)
-    return (pi_out[0], v_out[0], q_disp_out[0])
+    return (base_conv_output, pi_out[0], v_out[0], q_disp_out[0])
 
   
   def run_base_value(self, sess, s_t, last_action_reward):

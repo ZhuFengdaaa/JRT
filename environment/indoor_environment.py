@@ -74,10 +74,14 @@ class IndoorEnvironment(environment.Environment):
     
     self._episode_info = result.get('episode_info')
     self._last_full_state = result.get('observation')
+    hd_image = np.array(self._last_full_state['observation']['sensors']['color']['data'], copy=True)
+    resized_image = cv2.resize(self._last_full_state['observation']['sensors']['color']['data'], (84,84))
+    self._last_full_state['observation']['sensors']['color']['data'] = resized_image
+    self._last_full_state['observation']['sensors']['color']['hddata'] = hd_image
     obs = self._last_full_state['observation']['sensors']['color']['data']
     # self.render(obs)
     objective = self._last_full_state.get('measurements')
-    state = { 'image': self._preprocess_frame(obs), 'objective': objective }
+    state = { 'image': self._preprocess_frame(obs), 'objective': objective, "hdimage": hd_image }
     self.last_state = state
     self.last_action = 0
     self.last_reward = 0
@@ -106,6 +110,10 @@ class IndoorEnvironment(environment.Environment):
     real_action = IndoorEnvironment.ACTION_LIST[action]
 
     full_state = self._sim.step(real_action)
+    hd_image = np.array(full_state['observation']['sensors']['color']['data'], copy=True)
+    resized_image = cv2.resize(full_state['observation']['sensors']['color']['data'], (84,84))
+    full_state['observation']['sensors']['color']['data'] = resized_image
+    full_state['observation']['sensors']['color']['hddata'] = hd_image
     self._last_full_state = full_state  # Last observed state
     obs = full_state['observation']['sensors']['color']['data']
     # self.render(obs)
@@ -119,7 +127,7 @@ class IndoorEnvironment(environment.Environment):
     objective = full_state.get('measurements')
 
     if not terminal:
-      state = { 'image': self._preprocess_frame(obs), 'objective': objective }
+      state = { 'image': self._preprocess_frame(obs), 'objective': objective, "hdimage": hd_image }
     else:
       state = self.last_state
 
