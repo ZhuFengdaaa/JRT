@@ -117,9 +117,9 @@ class Application(object):
     print("load target cnn+policy")
     util.load_checkpoints("/home/linchao/unreal/suncg_s/checkpoint-13100068", "net_-1", "net_-1")
     print("overwrite source cnn")
-    util.load_checkpoints("/home/linchao/my_adda/saved_models/exp_012/checkpoint-1000", "target", "source/net_-1")
+    # util.load_checkpoints("/home/linchao/my_adda/saved_models/exp_012/checkpoint-1000", "target", "source/net_-1")
     print("overwrite target cnn")
-    util.load_checkpoints("/home/linchao/my_adda/saved_models/exp_012/checkpoint-1000", "target", "net_-1")
+    # util.load_checkpoints("/home/linchao/my_adda/saved_models/exp_012/checkpoint-1000", "target", "net_-1")
     print("load discriminator")
     util.load_checkpoints("/home/linchao/my_adda/saved_models/exp_012/checkpoint-1000", "disc", "disc_-1")
     self.trainers = []
