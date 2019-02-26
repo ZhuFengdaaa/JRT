@@ -38,6 +38,7 @@ class Evaluate(object):
                                                                 'episodes_per_scene_test': flags.episodes_per_scene})
     self.episode_reward = 0
     self.cnt_success = 0
+    self.cnt = 0
 
   def update(self, sess, update_iter):
     self.process(sess, update_iter)
@@ -69,7 +70,8 @@ class Evaluate(object):
     self.episode_reward += reward
   
     if terminal:
-      print(float(self.cnt_success) / 150)
+      self.cnt+=1
+      print(float(self.cnt_success) / self.cnt)
       self.environment.reset()
       self.episode_reward = 0
 
@@ -97,7 +99,7 @@ def main(args):
     evaluate.update(sess, update_iter)
   if flags.score_file is not None:
     with open(flags.score_file, "a") as score_file:
-      score_file.write("%.2f\n" % float(evaluate.cnt_success/150*100))
+      score_file.write("%.2f\n" % float(evaluate.cnt_success/evaluate.cnt*100))
 
     
 if __name__ == '__main__':

@@ -52,6 +52,8 @@ class IndoorEnvironment(environment.Environment):
     simargs['id'] = 'sim%02d' % thread_index
     simargs['logdir'] = os.path.join(IndoorEnvironment.get_log_dir(), simargs['id'])
     self.viewer = rendering.SimpleImageViewer()
+    self.file_cnt=0
+    self.img_cnt=0
 
     # Merge in extra env args
     if env_args is not None:
@@ -108,6 +110,9 @@ class IndoorEnvironment(environment.Environment):
     full_state = self._sim.step(real_action)
     self._last_full_state = full_state  # Last observed state
     obs = full_state['observation']['sensors']['color']['data']
+    if not os.path.exists("vis/"+str(self.file_cnt)):
+        os.mkdir("vis/"+str(self.file_cnt))
+    cv2.imwrite("vis/"+str(self.file_cnt)+"/"+str(self.img_cnt)+".jpg", obs)
     # self.render(obs)
     # depth = full_state['observation']['sensors']['depth']['data']
     # Image.fromarray(obs.astype('uint8')).save(os.path.join(self.directory, 'color{}.png'.format(self.i)))
@@ -121,12 +126,14 @@ class IndoorEnvironment(environment.Environment):
     if not terminal:
       state = { 'image': self._preprocess_frame(obs), 'objective': objective }
     else:
+      self.file_cnt+=1
       state = self.last_state
 
     pixel_change = self._calc_pixel_change(state['image'], self.last_state['image'])
     self.last_state = state
     self.last_action = action
     self.last_reward = reward
+    self.img_cnt+=1
     return state, reward, terminal, pixel_change, success
 
   def is_all_scheduled_episodes_done(self):
