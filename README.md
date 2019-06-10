@@ -8,7 +8,7 @@ Follow [OUR MINOS](https://github.com/zhufengdaaa/minos) installation instructio
 
 ## Training baselines
 
-Checkout git branch ##minos/train## and ##unreal/master##
+Checkout git branch **minos/train** and **unreal/master**
 
 Start experiments using invocations such as the following:
 
@@ -18,11 +18,11 @@ Refer to `options.py` for available arguments that control the hyperparameters a
 
 ## Adversarial Transfer
 
-Refer to [adda]()
+Refer to [adda](https://github.com/ZhuFengdaaa/adda)
 
 ## Policy Mimic
 
-Checkout git branch ##unreal/mimic## for policy mimic. 
+Checkout git branch **unreal/mimic** for policy mimic. 
 
 Set paths in code and run:
 
@@ -30,7 +30,7 @@ Set paths in code and run:
 
 ## Testing
 
-Checkout git branch ##unreal/test## for testing. 
+Checkout git branch **unreal/test** for testing. 
 
 `python3 main.py --env_type indoor --env_name roomgoal_mp3d_sf`
 
