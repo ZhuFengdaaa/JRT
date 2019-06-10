@@ -4,16 +4,33 @@ This is an implementation of the UNREAL agent described in [Reinforcement Learni
 
 ## Installation
 
-Follow the [MINOS](https://github.com/minosworld/minos) installation instructions.  Confirm that the minos package is available by running `python3 -c 'import minos; print(minos)'`.
+Follow [OUR MINOS](https://github.com/zhufengdaaa/minos) installation instructions.  Confirm that the minos package is available by running `python3 -c 'import minos; print(minos)'`.
 
-## Running experiments
+## Training baselines
+
+Checkout git branch ##minos/train## and ##unreal/master##
 
 Start experiments using invocations such as the following:
 
-`python3 main.py --env_type indoor --env_name pointgoal_suncg_se`
+`python3 main.py --env_type indoor --env_name roomgoal_suncg_sf`
 
-`python3 main.py --env_type indoor --env_name objectgoal_suncg_mf`
+Refer to `options.py` for available arguments that control the hyperparameters and agent architecture.
+
+## Adversarial Transfer
+
+Refer to [adda]()
+
+## Policy Mimic
+
+Checkout git branch ##unreal/mimic## for policy mimic. 
+
+Set paths in code and run:
 
 `python3 main.py --env_type indoor --env_name roomgoal_mp3d_s`
 
-Refer to `options.py` for available arguments that control the hyperparameters and agent architecture.
+## Testing
+
+Checkout git branch ##unreal/test## for testing. 
+
+`python3 main.py --env_type indoor --env_name roomgoal_mp3d_sf`
+
