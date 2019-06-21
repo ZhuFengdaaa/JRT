@@ -8,7 +8,8 @@ import time
 
 from environment.environment import Environment
 from model.model import UnrealModel
-from model.model_unreal import Discriminator
+# from model.model_unreal import Discriminator
+from model.decoder import Decoder
 from train.experience import Experience, ExperienceFrame
 import tensorflow as tf
 import util
@@ -79,37 +80,38 @@ class Trainer(object):
     with tf.device(device):
         mimic_loss = tf.nn.softmax_cross_entropy_with_logits(logits=self.local_network.base_pi_logits,
                                             labels=self.source_network.base_pi)
-        adversary_ft = tf.concat([self.source_network.h_conv2, self.local_network.h_conv2], 0)
-        self.local_discriminator = Discriminator(adversary_ft, device=device, thread_index=thread_index)
-        adversary_logits = self.local_discriminator.output
-        label_shape = tf.stack([tf.cast(tf.shape(adversary_logits)[0]/2, tf.int32), tf.shape(adversary_logits)[1]])
-        label_ms = tf.fill(label_shape, 1.0)
-        label_mt = tf.fill(label_shape, 0.0)
-        # label_ms = tf.fill([1, 1], 1.0)
-        # label_mt = tf.fill([1, 1], 0.0)
-        adversary_label = tf.concat([label_ms, label_mt], 0)
-        # adversary_logits = tf.Print(adversary_logits, [tf.shape(adversary_logits)], message="adversary_logits: ")
-        # adversary_label = tf.Print(adversary_label, [tf.shape(adversary_label)], message="adversary_logits: ")
-        mapping_loss = tf.nn.sigmoid_cross_entropy_with_logits(logits = adversary_logits, labels = 1 - adversary_label)
+        # adversary_ft = tf.concat([self.source_network.h_conv2, self.local_network.h_conv2], 0)
+        with tf.variable_scope('dec_model', reuse=tf.AUTO_REUSE):
+            self.local_discriminator1 = Decoder(X=self.source_network.h_conv2, device=device, thread_index=thread_index)
+            self.local_discriminator2 = Decoder(X=self.local_network.h_conv2, device=device, thread_index=thread_index)
+        adversary_logits1 = self.local_discriminator1.mp_h1
+        adversary_logits2 = self.local_discriminator2.mp_h1
+        adv_label1 = 0.0
+        adv_label2 = 1.0
+        # mapping_loss = tf.nn.sigmoid_cross_entropy_with_logits(logits = adversary_logits, labels = 1 - adversary_label)
         # mimic_loss = tf.Print(mimic_loss, [mimic_loss], message="mimic_loss")
         # mapping_loss = tf.Print(mapping_loss, [mapping_loss], message="mapping_loss")
-        adversary_loss = tf.nn.sigmoid_cross_entropy_with_logits(logits = adversary_logits, labels = adversary_label)
+        adversary_loss1 = tf.nn.sigmoid_cross_entropy_with_logits(logits = adversary_logits1, labels = adv_label1)
+        adversary_loss2 = tf.nn.sigmoid_cross_entropy_with_logits(logits = adversary_logits2, labels = adv_label2)
+        adversary_loss = adversary_loss1 + adversary_loss2
+        # dec_adv_loss = - tf.nn.sigmoid_cross_entropy_with_logits(logits = dec_adv_logits, labels = train_adv_label)
         
-        self.mapping_loss = tf.reduce_mean(mapping_loss) * mapping_weight
+        self.adversary_loss = tf.reduce_mean(adversary_loss) * adv_weight
         self.mimic_loss = tf.reduce_mean(mimic_loss) * mimic_weight
         # adversary_loss = tf.Print(adversary_loss, [tf.shape(adversary_loss)], message="adversary_loss")
         if self.thread_index == 0:
             tf.summary.scalar("policy_loss", self.local_network.total_loss)
-            tf.summary.scalar("mapping_loss", self.mapping_loss)
+            tf.summary.scalar("adversary_loss", self.adversary_loss)
             tf.summary.scalar("mimic_loss", self.mimic_loss)
             self.summary_op = tf.summary.merge_all()
-        total_loss = self.local_network.total_loss + self.mapping_loss + self.mimic_loss
+        total_loss = self.local_network.total_loss - self.adversary_loss + self.mimic_loss
     #print("load target cnn")
     #util.load_checkpoints("/home/linchao/my_adda/saved_models/exp_012/checkpoint-1000", "target", "net_{}".format(thread_index))
     #print("load target policy")
     #util.load_checkpoints("/home/linchao/unreal/suncg_s/checkpoint-13100068", "net_-1", "net_{}".format(thread_index))
     self.apply_network_gradients = grad_applier.minimize_local(total_loss,global_network.get_no_cnn_vars(), self.local_network.get_no_cnn_vars())
-    self.apply_discriminator_gradients =  grad_applier.minimize_local(adversary_loss,global_discriminator.get_vars(),self.local_discriminator.get_vars())
+    
+    self.apply_discriminator_gradients = grad_applier.minimize_local(adversary_loss,global_discriminator.get_vars(),self.local_discriminator.get_vars())
     
     self.sync = [self.local_network.sync_from(global_network)] + [self.local_discriminator.sync_from(global_discriminator)]
     self.experience = Experience(self.experience_history_size)

@@ -404,12 +404,15 @@ class UnrealModel(object):
                                                                        self.base_initial_lstm_state0 : self.base_lstm_state_out[0],
                                                                        self.base_initial_lstm_state1 : self.base_lstm_state_out[1]} )
     else:
-      pi_out, v_out = sess.run([self.base_pi, self.base_v],
+      pi_out, v_out, h_conv2 = sess.run([self.base_pi, self.base_v, self.h_conv2],
                                feed_dict = {self.base_input : [s_t['image']],
                                             self.base_last_action_reward_input : [last_action_reward]} )
 
     # pi_out: (1,3), v_out: (1)
-    return (pi_out[0], v_out[0])
+    logging.info("pi_out", pi_out)
+    logging.info("v_out", v_out)
+    logging.info("h_conv2", h_conv2)
+    return (pi_out[0], v_out[0], h_conv2)
 
   
   def run_base_policy_value_pc_q(self, sess, s_t, last_action_reward):
